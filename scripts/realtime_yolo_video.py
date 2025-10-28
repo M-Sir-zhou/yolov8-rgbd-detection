@@ -1,12 +1,15 @@
-import cv2
-import time
 import argparse
 import os
+import time
+
+import cv2
 import numpy as np
+
 from ultralytics import YOLO
 
+
 def draw_boxes(frame, boxes, scores=None, classes=None, names=None, colors=None):
-    """兼容处理：即使 scores/classes 为空也绘制 boxes（labels 使用类 id）"""
+    """兼容处理：即使 scores/classes 为空也绘制 boxes（labels 使用类 id）."""
     if boxes is None or len(boxes) == 0:
         return
     # 保证数组
@@ -28,16 +31,17 @@ def draw_boxes(frame, boxes, scores=None, classes=None, names=None, colors=None)
         label = f"{names.get(cls, str(cls))} {conf:.2f}"
         t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)[0]
         cv2.rectangle(frame, (x1, y1 - t_size[1] - 6), (x1 + t_size[0] + 6, y1), color, -1)
-        cv2.putText(frame, label, (x1 + 3, y1 - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+        cv2.putText(frame, label, (x1 + 3, y1 - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
 
 def main():
     parser = argparse.ArgumentParser(description="实时 YOLO 视频检测")
-    parser.add_argument('--weights', '-w', required=True, help="YOLO 权重文件 (.pt)")
-    parser.add_argument('--source', '-s', default=0, help="视频源：文件路径 或 摄像头索引（0）")
-    parser.add_argument('--out', '-o', default=None, help="保存输出视频路径（可选）")
-    parser.add_argument('--imgsz', type=int, default=640, help="网络输入尺寸")
-    parser.add_argument('--conf', type=float, default=0.25, help="置信度阈值")
-    parser.add_argument('--device', default='0', help="设备: 'cpu' 或 GPU 索引如 '0' 或 'cuda:0'")
+    parser.add_argument("--weights", "-w", required=True, help="YOLO 权重文件 (.pt)")
+    parser.add_argument("--source", "-s", default=0, help="视频源：文件路径 或 摄像头索引（0）")
+    parser.add_argument("--out", "-o", default=None, help="保存输出视频路径（可选）")
+    parser.add_argument("--imgsz", type=int, default=640, help="网络输入尺寸")
+    parser.add_argument("--conf", type=float, default=0.25, help="置信度阈值")
+    parser.add_argument("--device", default="0", help="设备: 'cpu' 或 GPU 索引如 '0' 或 'cuda:0'")
     args = parser.parse_args()
 
     # 解析 source（数字 => 摄像头）
@@ -63,7 +67,7 @@ def main():
     writer = None
     if args.out:
         os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         writer = cv2.VideoWriter(args.out, fourcc, fps_in, (width, height))
 
     # 颜色和类名
@@ -81,7 +85,7 @@ def main():
         results = model(frame, device=args.device, imgsz=args.imgsz, conf=args.conf)
         r = results[0]
 
-        boxes = np.empty((0,4))
+        boxes = np.empty((0, 4))
         scores = np.array([])
         classes = np.array([])
         if hasattr(r, "boxes") and r.boxes is not None and len(r.boxes) > 0:
@@ -105,7 +109,7 @@ def main():
         now = time.time()
         fps = 1.0 / (now - prev_time) if now != prev_time else 0.0
         prev_time = now
-        cv2.putText(frame, f"FPS: {fps:.1f}", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
+        cv2.putText(frame, f"FPS: {fps:.1f}", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
         # 显示
         cv2.imshow("YOLO RealTime", frame)
@@ -121,7 +125,7 @@ def main():
                 print("Warning: video writer is not opened, output will not be saved.")
 
         key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
+        if key == ord("q"):
             break
 
     cap.release()
@@ -129,12 +133,10 @@ def main():
         writer.release()
     cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()
 
 
-
-
-#  mkdir "D:\ProjectCode\PyCharm\ultralytics-main\scripts\path_results" -ErrorAction SilentlyContinue 
+#  mkdir "D:\ProjectCode\PyCharm\ultralytics-main\scripts\path_results" -ErrorAction SilentlyContinue
 # python d:\ProjectCode\PyCharm\ultralytics-main\scripts\realtime_yolo_video.py --weights "D:\ProjectCode\PyCharm\ultralytics-main\runs\detect\train19\weights\best.pt" --source "D:\123\Videos\Screenshot\apple.mp4" --out "D:\ProjectCode\PyCharm\ultralytics-main\scripts\path_results\out.mp4" --device 0
-

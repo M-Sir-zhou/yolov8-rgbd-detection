@@ -27,6 +27,8 @@ IMX                     | `imx`                     | yolo11n_imx_model/
 RKNN                    | `rknn`                    | yolo11n_rknn_model/
 """
 
+from __future__ import annotations
+
 import glob
 import os
 import platform
@@ -34,7 +36,6 @@ import re
 import shutil
 import time
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch.cuda
@@ -278,7 +279,7 @@ class RF100Benchmark:
         with open(ds_link_txt, encoding="utf-8") as file:
             for line in file:
                 try:
-                    _, url, workspace, project, version = re.split("/+", line.strip())
+                    _, _url, workspace, project, version = re.split("/+", line.strip())
                     self.ds_names.append(project)
                     proj_version = f"{project}-{version}"
                     if not Path(proj_version).exists():
@@ -349,7 +350,7 @@ class RF100Benchmark:
                     map_val = lst["map50"]
         else:
             LOGGER.info("Single dict found")
-            map_val = [res["map50"] for res in eval_lines][0]
+            map_val = next(res["map50"] for res in eval_lines)
 
         with open(eval_log_file, "a", encoding="utf-8") as f:
             f.write(f"{self.ds_names[list_ind]}: {map_val}\n")
@@ -393,14 +394,14 @@ class ProfileModels:
 
     def __init__(
         self,
-        paths: List[str],
+        paths: list[str],
         num_timed_runs: int = 100,
         num_warmup_runs: int = 10,
         min_time: float = 60,
         imgsz: int = 640,
         half: bool = True,
         trt: bool = True,
-        device: Optional[Union[torch.device, str]] = None,
+        device: torch.device | str | None = None,
     ):
         """
         Initialize the ProfileModels class for profiling models.
@@ -643,9 +644,9 @@ class ProfileModels:
     def generate_table_row(
         self,
         model_name: str,
-        t_onnx: Tuple[float, float],
-        t_engine: Tuple[float, float],
-        model_info: Tuple[float, float, float, float],
+        t_onnx: tuple[float, float],
+        t_engine: tuple[float, float],
+        model_info: tuple[float, float, float, float],
     ):
         """
         Generate a table row string with model performance metrics.
@@ -659,7 +660,7 @@ class ProfileModels:
         Returns:
             (str): Formatted table row string with model metrics.
         """
-        layers, params, gradients, flops = model_info
+        _layers, params, _gradients, flops = model_info
         return (
             f"| {model_name:18s} | {self.imgsz} | - | {t_onnx[0]:.1f}±{t_onnx[1]:.1f} ms | {t_engine[0]:.1f}±"
             f"{t_engine[1]:.1f} ms | {params / 1e6:.1f} | {flops:.1f} |"
@@ -668,9 +669,9 @@ class ProfileModels:
     @staticmethod
     def generate_results_dict(
         model_name: str,
-        t_onnx: Tuple[float, float],
-        t_engine: Tuple[float, float],
-        model_info: Tuple[float, float, float, float],
+        t_onnx: tuple[float, float],
+        t_engine: tuple[float, float],
+        model_info: tuple[float, float, float, float],
     ):
         """
         Generate a dictionary of profiling results.
@@ -684,7 +685,7 @@ class ProfileModels:
         Returns:
             (dict): Dictionary containing profiling results.
         """
-        layers, params, gradients, flops = model_info
+        _layers, params, _gradients, flops = model_info
         return {
             "model/name": model_name,
             "model/parameters": params,
@@ -694,7 +695,7 @@ class ProfileModels:
         }
 
     @staticmethod
-    def print_table(table_rows: List[str]):
+    def print_table(table_rows: list[str]):
         """
         Print a formatted table of model profiling results.
 

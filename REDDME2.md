@@ -17,4 +17,3 @@ yolo val model=D:\ProjectCode\PyCharm\ultralytics-main\runs\detect\train20\weigh
 
 检测：
 yolo predict model="D:\ProjectCode\PyCharm\ultralytics-main\runs\detect\train16\weights\best.pt" source="D:\ProjectCode\PyCharm\ultralytics-main\datasets\tennis-yolo\images\test\tennis (1).png"
-
