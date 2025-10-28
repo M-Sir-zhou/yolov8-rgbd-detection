@@ -1,11 +1,12 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+from __future__ import annotations
 
 import os
 import random
 import threading
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
@@ -52,8 +53,8 @@ def request_with_credentials(url: str) -> Any:
     """
     if not IS_COLAB:
         raise OSError("request_with_credentials() must run in a Colab environment")
-    from google.colab import output  # noqa
-    from IPython import display  # noqa
+    from google.colab import output
+    from IPython import display
 
     display.display(
         display.Javascript(
@@ -120,7 +121,7 @@ def smart_request(
     verbose: bool = True,
     progress: bool = False,
     **kwargs,
-) -> Optional[requests.Response]:
+) -> requests.Response | None:
     """
     Make an HTTP request using the 'requests' library, with exponential backoff retries up to a specified timeout.
 

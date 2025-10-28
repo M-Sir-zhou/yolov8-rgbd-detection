@@ -1,4 +1,5 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+from __future__ import annotations
 
 import ast
 import json
@@ -6,7 +7,7 @@ import platform
 import zipfile
 from collections import OrderedDict, namedtuple
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import cv2
 import numpy as np
@@ -19,7 +20,7 @@ from ultralytics.utils.checks import check_requirements, check_suffix, check_ver
 from ultralytics.utils.downloads import attempt_download_asset, is_url
 
 
-def check_class_names(names: Union[List, Dict]) -> Dict[int, str]:
+def check_class_names(names: list | dict) -> dict[int, str]:
     """
     Check class names and convert to dict format if needed.
 
@@ -49,7 +50,7 @@ def check_class_names(names: Union[List, Dict]) -> Dict[int, str]:
     return names
 
 
-def default_class_names(data: Optional[Union[str, Path]] = None) -> Dict[int, str]:
+def default_class_names(data: str | Path | None = None) -> dict[int, str]:
     """
     Apply default class names to an input YAML file or return numerical class names.
 
@@ -134,10 +135,10 @@ class AutoBackend(nn.Module):
     @torch.no_grad()
     def __init__(
         self,
-        weights: Union[str, List[str], torch.nn.Module] = "yolo11n.pt",
+        weights: str | list[str] | torch.nn.Module = "yolo11n.pt",
         device: torch.device = torch.device("cpu"),
         dnn: bool = False,
-        data: Optional[Union[str, Path]] = None,
+        data: str | Path | None = None,
         fp16: bool = False,
         fuse: bool = True,
         verbose: bool = True,
@@ -335,11 +336,11 @@ class AutoBackend(nn.Module):
                 check_requirements("numpy==1.23.5")
 
             try:  # https://developer.nvidia.com/nvidia-tensorrt-download
-                import tensorrt as trt  # noqa
+                import tensorrt as trt
             except ImportError:
                 if LINUX:
                     check_requirements("tensorrt>7.0.0,!=10.1.0")
-                import tensorrt as trt  # noqa
+                import tensorrt as trt
             check_version(trt.__version__, ">=7.0.0", hard=True)
             check_version(trt.__version__, "!=10.1.0", msg="https://github.com/ultralytics/ultralytics/pull/14239")
             if device.type == "cpu":
@@ -492,7 +493,7 @@ class AutoBackend(nn.Module):
                 if ARM64
                 else "paddlepaddle>=3.0.0"
             )
-            import paddle.inference as pdi  # noqa
+            import paddle.inference as pdi
 
             w = Path(w)
             model_file, params_file = None, None
@@ -617,9 +618,9 @@ class AutoBackend(nn.Module):
         im: torch.Tensor,
         augment: bool = False,
         visualize: bool = False,
-        embed: Optional[List] = None,
+        embed: list | None = None,
         **kwargs: Any,
-    ) -> Union[torch.Tensor, List[torch.Tensor]]:
+    ) -> torch.Tensor | list[torch.Tensor]:
         """
         Run inference on an AutoBackend model.
 
@@ -633,7 +634,7 @@ class AutoBackend(nn.Module):
         Returns:
             (torch.Tensor | List[torch.Tensor]): The raw output tensor(s) from the model.
         """
-        b, ch, h, w = im.shape  # batch, channel, height, width
+        _b, _ch, h, w = im.shape  # batch, channel, height, width
         if self.fp16 and im.dtype != torch.float16:
             im = im.half()  # to FP16
         if self.nhwc:
@@ -848,7 +849,7 @@ class AutoBackend(nn.Module):
         """
         return torch.tensor(x).to(self.device) if isinstance(x, np.ndarray) else x
 
-    def warmup(self, imgsz: Tuple[int, int, int, int] = (1, 3, 640, 640)) -> None:
+    def warmup(self, imgsz: tuple[int, int, int, int] = (1, 3, 640, 640)) -> None:
         """
         Warm up the model by running one forward pass with a dummy input.
 
@@ -864,7 +865,7 @@ class AutoBackend(nn.Module):
                 self.forward(im)  # warmup
 
     @staticmethod
-    def _model_type(p: str = "path/to/model.pt") -> List[bool]:
+    def _model_type(p: str = "path/to/model.pt") -> list[bool]:
         """
         Take a path to a model file and return the model type.
 
@@ -895,4 +896,4 @@ class AutoBackend(nn.Module):
             url = urlsplit(p)
             triton = bool(url.netloc) and bool(url.path) and url.scheme in {"http", "grpc"}
 
-        return types + [triton]
+        return [*types, triton]

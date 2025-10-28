@@ -1,19 +1,19 @@
 # preprocess_rgbd.py
-#融合RGB-D
+# 融合RGB-D
+import os
+import re
+import shutil
+
 import cv2
 import numpy as np
-import os
-import shutil
-import re
-from pathlib import Path
 
 # 在文件开头定义全局深度范围（需要预先计算）
-GLOBAL_DEPTH_MIN = 0   # 替换为实际最小值
-GLOBAL_DEPTH_MAX = 10000 # 替换为实际最大值
+GLOBAL_DEPTH_MIN = 0  # 替换为实际最小值
+GLOBAL_DEPTH_MAX = 10000  # 替换为实际最大值
 
 
 def combine_rgb_depth(rgb_path, depth_path, output_path):
-    """将 RGB 和深度图像合并为 4 通道图像 (RGB + Depth)，使用全局归一化"""
+    """将 RGB 和深度图像合并为 4 通道图像 (RGB + Depth)，使用全局归一化."""
     try:
         # 读取 RGB 图像
         rgb_image = cv2.imread(rgb_path)
@@ -41,7 +41,9 @@ def combine_rgb_depth(rgb_path, depth_path, output_path):
         if GLOBAL_DEPTH_MAX > GLOBAL_DEPTH_MIN:
             # 将深度值裁剪到全局范围后再归一化
             depth_image = np.clip(depth_image, GLOBAL_DEPTH_MIN, GLOBAL_DEPTH_MAX)
-            depth_image = ((depth_image - GLOBAL_DEPTH_MIN) / (GLOBAL_DEPTH_MAX - GLOBAL_DEPTH_MIN) * 255).astype(np.uint8)
+            depth_image = ((depth_image - GLOBAL_DEPTH_MIN) / (GLOBAL_DEPTH_MAX - GLOBAL_DEPTH_MIN) * 255).astype(
+                np.uint8
+            )
         else:
             depth_image = np.zeros_like(depth_image, dtype=np.uint8)
 
@@ -59,7 +61,7 @@ def combine_rgb_depth(rgb_path, depth_path, output_path):
 
 
 def find_matching_depth_file(rgb_file, depth_dir):
-    """查找与 RGB 图像匹配的深度图像文件"""
+    """查找与 RGB 图像匹配的深度图像文件."""
     # 提取 RGB 图像的基本名称（不带扩展名）
     base_name = os.path.splitext(rgb_file)[0]
 
@@ -84,11 +86,11 @@ def find_matching_depth_file(rgb_file, depth_dir):
             return depth_path
 
     # 如果以上模式都不匹配，尝试查找包含相同数字的任何文件
-    number_match = re.search(r'\d+', base_name)
+    number_match = re.search(r"\d+", base_name)
     if number_match:
         number = number_match.group()
         for depth_file in os.listdir(depth_dir):
-            if number in depth_file and depth_file.endswith(('.png', '.jpg', '.jpeg')):
+            if number in depth_file and depth_file.endswith((".png", ".jpg", ".jpeg")):
                 return os.path.join(depth_dir, depth_file)
 
     print(f"找不到与 {rgb_file} 匹配的深度图像")
@@ -96,7 +98,7 @@ def find_matching_depth_file(rgb_file, depth_dir):
 
 
 def preprocess_dataset():
-    """预处理整个数据集"""
+    """预处理整个数据集."""
     # 原始数据集路径
     base_path = "D:/ProjectCode/PyCharm/ultralytics-main/datasets/tennis-rgbd"
 
@@ -104,18 +106,18 @@ def preprocess_dataset():
     output_base = "D:/ProjectCode/PyCharm/ultralytics-main/datasets/tennis-yolo"
 
     # 创建输出目录
-    for split in ['train', 'val', 'test']:
-        os.makedirs(os.path.join(output_base, 'images', split), exist_ok=True)
-        os.makedirs(os.path.join(output_base, 'labels', split), exist_ok=True)
+    for split in ["train", "val", "test"]:
+        os.makedirs(os.path.join(output_base, "images", split), exist_ok=True)
+        os.makedirs(os.path.join(output_base, "labels", split), exist_ok=True)
 
     # 处理每个分割（训练集、验证集、测试集）
-    for split in ['train', 'val', 'test']:
-        rgb_dir = os.path.join(base_path, split, 'rgb')
-        depth_dir = os.path.join(base_path, split, 'depth')
-        labels_dir = os.path.join(base_path, split, 'labels')
+    for split in ["train", "val", "test"]:
+        rgb_dir = os.path.join(base_path, split, "rgb")
+        depth_dir = os.path.join(base_path, split, "depth")
+        labels_dir = os.path.join(base_path, split, "labels")
 
-        output_image_dir = os.path.join(output_base, 'images', split)
-        output_label_dir = os.path.join(output_base, 'labels', split)
+        output_image_dir = os.path.join(output_base, "images", split)
+        output_label_dir = os.path.join(output_base, "labels", split)
 
         print(f"\n处理 {split} 数据集...")
         print(f"RGB 目录: {rgb_dir}")
@@ -138,7 +140,7 @@ def preprocess_dataset():
         # 处理每个图像
         processed_count = 0
         for rgb_file in os.listdir(rgb_dir):
-            if rgb_file.endswith(('.png', '.jpg', '.jpeg')):
+            if rgb_file.endswith((".png", ".jpg", ".jpeg")):
                 # 构建 RGB 图像路径
                 rgb_path = os.path.join(rgb_dir, rgb_file)
 
@@ -150,11 +152,11 @@ def preprocess_dataset():
                     continue
 
                 # 构建标签文件路径
-                label_file = os.path.splitext(rgb_file)[0] + '.txt'
+                label_file = os.path.splitext(rgb_file)[0] + ".txt"
                 label_path = os.path.join(labels_dir, label_file)
 
                 # 合并 RGB 和深度图像
-                output_image_path = os.path.join(output_image_dir, os.path.splitext(rgb_file)[0] + '.png')
+                output_image_path = os.path.join(output_image_dir, os.path.splitext(rgb_file)[0] + ".png")
                 success = combine_rgb_depth(rgb_path, depth_path, output_image_path)
 
                 if success:
@@ -171,6 +173,6 @@ def preprocess_dataset():
         print(f"{split} 数据集处理完成: {processed_count} 个图像")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     preprocess_dataset()
     print("数据集预处理完成!")

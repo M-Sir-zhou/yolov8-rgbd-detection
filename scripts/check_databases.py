@@ -1,9 +1,9 @@
-import os, sys
 from pathlib import Path
 
 dataset = Path(r"d:\\ProjectCode\\PyCharm\\ultralytics-main\\datasets\\tennis-yolo")
 labels_dirs = [dataset / "labels" / "train", dataset / "labels" / "val", dataset / "labels" / "test"]
 img_dirs = [dataset / "images" / "train", dataset / "images" / "val", dataset / "images" / "test"]
+
 
 def check_one(label_path, img_path, nc):
     problems = []
@@ -17,24 +17,28 @@ def check_one(label_path, img_path, nc):
     for i, l in enumerate(lines):
         parts = l.split()
         if len(parts) != 5:
-            problems.append(f"line{i+1}_bad_format:{l}")
+            problems.append(f"line{i + 1}_bad_format:{l}")
             continue
         cls, x, y, w, h = parts
         try:
             ci = int(float(cls))
-            xf = float(x); yf = float(y); wf = float(w); hf = float(h)
+            xf = float(x)
+            yf = float(y)
+            wf = float(w)
+            hf = float(h)
         except Exception:
-            problems.append(f"line{i+1}_parse_error:{l}")
+            problems.append(f"line{i + 1}_parse_error:{l}")
             continue
         if ci < 0 or ci >= nc:
-            problems.append(f"line{i+1}_class_out_of_range:{ci}")
+            problems.append(f"line{i + 1}_class_out_of_range:{ci}")
         if not (0.0 <= xf <= 1.0 and 0.0 <= yf <= 1.0):
-            problems.append(f"line{i+1}_center_out_of_range:{xf},{yf}")
+            problems.append(f"line{i + 1}_center_out_of_range:{xf},{yf}")
         if not (0.0 < wf <= 1.0 and 0.0 < hf <= 1.0):
-            problems.append(f"line{i+1}_wh_invalid:{wf},{hf}")
+            problems.append(f"line{i + 1}_wh_invalid:{wf},{hf}")
     # image size (optional)
     if img_path.exists():
         import cv2
+
         im = cv2.imread(str(img_path))
         if im is None:
             problems.append("image_cannot_read")
@@ -46,14 +50,16 @@ def check_one(label_path, img_path, nc):
         problems.append("image_missing")
     return problems, len(lines)
 
+
 def main():
     # read nc from dataset yaml if exists
-# ...existing code...
+    # ...existing code...
     # read nc from dataset yaml if exists
     nc = 1
     yamlf = dataset / "tennis-yolo.yaml"
     if yamlf.exists():
         import yaml
+
         text = None
         # 尝试多种常见编码读取
         for enc in ("utf-8", "utf-8-sig", "utf-16", "gbk", "latin-1"):
@@ -86,8 +92,7 @@ def main():
         except Exception:
             nc = 1
         print("Detected nc from yaml:", nc)
-# ...existing code...
-    total_report = []
+    # ...existing code...
     for lab_dir, img_dir in zip(labels_dirs, img_dirs):
         if not lab_dir.exists():
             print("labels dir missing:", lab_dir)
@@ -99,10 +104,11 @@ def main():
             img_name = f.stem
             # try common image extensions
             imgp = None
-            for ext in (".jpg",".jpeg",".png",".bmp"):
+            for ext in (".jpg", ".jpeg", ".png", ".bmp"):
                 p = img_dir / (img_name + ext)
                 if p.exists():
-                    imgp = p; break
+                    imgp = p
+                    break
             problems, nlab = check_one(f, imgp or Path(""), nc)
             if problems and problems != ["no_labels"]:
                 badcount += 1
@@ -110,5 +116,6 @@ def main():
         print(f"{lab_dir.name}: {badcount} bad files")
     print("done")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
