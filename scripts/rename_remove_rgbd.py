@@ -1,8 +1,9 @@
 # 将文件名中的 "_rgbd" 移除，保留其余部分（包括数字）。默认 dry-run，使用 --apply 才会真正重命名。
 import argparse
-from pathlib import Path
 import shutil
 import sys
+from pathlib import Path
+
 
 def safe_new_name(p: Path, new_stem: str):
     new_name = new_stem + p.suffix
@@ -13,9 +14,10 @@ def safe_new_name(p: Path, new_stem: str):
         i += 1
     return candidate
 
+
 def rename_remove_rgbd(root: Path, apply: bool = False, recursive: bool = True, exts=None):
     if exts is None:
-        exts = {'.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff'}
+        exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
     files = list(root.rglob("*") if recursive else root.glob("*"))
     files = [p for p in files if p.is_file() and p.suffix.lower() in exts]
     changed = []
@@ -62,13 +64,18 @@ def rename_remove_rgbd(root: Path, apply: bool = False, recursive: bool = True, 
     print("Done. Total renamed:", renamed)
     return renamed
 
+
 def main():
     parser = argparse.ArgumentParser(description="Remove '_rgbd' from image filenames under tennis-yolo/images")
-    parser.add_argument('--root', '-r', default=r"d:\ProjectCode\PyCharm\ultralytics-main\datasets\tennis-yolo\images",
-                        help="images root directory")
-    parser.add_argument('--apply', action='store_true', help="actually perform renames (default: dry-run)")
-    parser.add_argument('--no-recursive', dest='recursive', action='store_false', help="do not recurse into subfolders")
-    parser.add_argument('--exts', nargs='*', help="file extensions to consider, e.g. .jpg .png")
+    parser.add_argument(
+        "--root",
+        "-r",
+        default=r"d:\ProjectCode\PyCharm\ultralytics-main\datasets\tennis-yolo\images",
+        help="images root directory",
+    )
+    parser.add_argument("--apply", action="store_true", help="actually perform renames (default: dry-run)")
+    parser.add_argument("--no-recursive", dest="recursive", action="store_false", help="do not recurse into subfolders")
+    parser.add_argument("--exts", nargs="*", help="file extensions to consider, e.g. .jpg .png")
     args = parser.parse_args()
 
     root = Path(args.root)
@@ -77,8 +84,9 @@ def main():
         sys.exit(1)
     exts = None
     if args.exts:
-        exts = set(e.lower() if e.startswith('.') else f".{e.lower()}" for e in args.exts)
+        exts = set(e.lower() if e.startswith(".") else f".{e.lower()}" for e in args.exts)
     rename_remove_rgbd(root, apply=args.apply, recursive=args.recursive, exts=exts)
+
 
 if __name__ == "__main__":
     main()

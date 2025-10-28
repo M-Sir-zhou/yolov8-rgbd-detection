@@ -1,10 +1,10 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+from __future__ import annotations
 
 import contextlib
 import math
 import re
 import time
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -39,7 +39,7 @@ class Profile(contextlib.ContextDecorator):
         ...     time.sleep(0.1)
     """
 
-    def __init__(self, t: float = 0.0, device: Optional[torch.device] = None):
+    def __init__(self, t: float = 0.0, device: torch.device | None = None):
         """
         Initialize the Profile class.
 
@@ -56,7 +56,7 @@ class Profile(contextlib.ContextDecorator):
         self.start = self.time()
         return self
 
-    def __exit__(self, type, value, traceback):  # noqa
+    def __exit__(self, type, value, traceback):
         """Stop timing."""
         self.dt = self.time() - self.start  # delta-time
         self.t += self.dt  # accumulate dt
@@ -405,10 +405,10 @@ def scale_image(masks, im0_shape, ratio_pad=None):
     else:
         pad = ratio_pad[1]
 
-    top, left = (int(round(pad[1] - 0.1)), int(round(pad[0] - 0.1)))
+    top, left = (round(pad[1] - 0.1), round(pad[0] - 0.1))
     bottom, right = (
-        im1_shape[0] - int(round(pad[1] + 0.1)),
-        im1_shape[1] - int(round(pad[0] + 0.1)),
+        im1_shape[0] - round(pad[1] + 0.1),
+        im1_shape[1] - round(pad[0] + 0.1),
     )
 
     if len(masks.shape) < 2:
@@ -760,10 +760,10 @@ def scale_masks(masks, shape, padding: bool = True):
     if padding:
         pad[0] /= 2
         pad[1] /= 2
-    top, left = (int(round(pad[1] - 0.1)), int(round(pad[0] - 0.1))) if padding else (0, 0)  # y, x
+    top, left = (round(pad[1] - 0.1), round(pad[0] - 0.1)) if padding else (0, 0)  # y, x
     bottom, right = (
-        mh - int(round(pad[1] + 0.1)),
-        mw - int(round(pad[0] + 0.1)),
+        mh - round(pad[1] + 0.1),
+        mw - round(pad[0] + 0.1),
     )
     masks = masks[..., top:bottom, left:right]
 
