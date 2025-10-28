@@ -1,18 +1,20 @@
 #   python "D:\ProjectCode\PyCharm\ultralytics-main\scripts\rgbd_tennis_planner.py" --input "D:\ProjectCode\PyCharm\ultralytics-main\datasets\path_out\rgb(1)_rgbd.png" --out "D:\ProjectCode\PyCharm\ultralytics-main\scripts\path_results\path(1).png" --weights "D:\ProjectCode\PyCharm\ultralytics-main\runs\detect\train16\weights\best.pt" --device 0
-import cv2
-import numpy as np
 import argparse
 import os
 from math import hypot
+
+import cv2
+import numpy as np
 
 try:
     from ultralytics import YOLO
 except Exception:
     YOLO = None
 
+
 # ...existing code...
-def detect_with_yolo(rgb_image, model=None, conf=0.25, imgsz=640, device='cpu'):
-    """更稳健的 YOLO 推理：尝试 RGB/BGR 输入并打印调试信息"""
+def detect_with_yolo(rgb_image, model=None, conf=0.25, imgsz=640, device="cpu"):
+    """更稳健的 YOLO 推理：尝试 RGB/BGR 输入并打印调试信息."""
     if model is None:
         return []
 
@@ -22,8 +24,8 @@ def detect_with_yolo(rgb_image, model=None, conf=0.25, imgsz=640, device='cpu'):
     if img.ndim == 2:
         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 
-    for mode in ('rgb', 'bgr'):
-        inp = img if mode == 'rgb' else cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    for mode in ("rgb", "bgr"):
+        inp = img if mode == "rgb" else cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         try:
             results = model(inp, device=device, imgsz=imgsz, conf=conf)
         except Exception as e:
@@ -53,18 +55,20 @@ def detect_with_yolo(rgb_image, model=None, conf=0.25, imgsz=640, device='cpu'):
         dets = []
         for (x1, y1, x2, y2), sc, cl in zip(xyxy, scores, classes):
             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-            dets.append({'bbox': (x1, y1, x2 - x1, y2 - y1), 'score': float(sc), 'class': int(cl)})
-        print(f"YOLO({mode}) detected {len(dets)} boxes; model.names:", getattr(model.model, 'names', {}))
+            dets.append({"bbox": (x1, y1, x2 - x1, y2 - y1), "score": float(sc), "class": int(cl)})
+        print(f"YOLO({mode}) detected {len(dets)} boxes; model.names:", getattr(model.model, "names", {}))
         return dets
 
     return []
+
+
 # ...existing code...
+
 
 # ...existing code...
 def load_rgbd(rgb_path, depth_path=None):
-    """
-    加载 RGB 和 深度图，返回 (rgb(H,W,3) uint8, depth(H,W) float32 in 0..1 or None)
-    兼容 uint8/uint16/float 的输入，若 RGB 为 uint16 会转换为 uint8 以供 cvtColor 使用。
+    """加载 RGB 和 深度图，返回 (rgb(H,W,3) uint8, depth(H,W) float32 in 0..1 or None) 兼容 uint8/uint16/float 的输入，若 RGB 为 uint16
+    会转换为 uint8 以供 cvtColor 使用。.
     """
     if not os.path.exists(rgb_path):
         raise FileNotFoundError(f"rgb not found: {rgb_path}")
@@ -120,10 +124,13 @@ def load_rgbd(rgb_path, depth_path=None):
         depth = _process_depth_channel(d)
 
     return rgb, depth
+
+
 # ...existing code...
 
+
 def _process_depth_channel(depth_ch):
-    """将各种深度通道类型归一化为 float32 0..1"""
+    """将各种深度通道类型归一化为 float32 0..1."""
     if depth_ch is None:
         return None
     if depth_ch.dtype == np.uint16:
@@ -143,8 +150,9 @@ def _process_depth_channel(depth_ch):
             depth = (depth - mn) / (mx - mn)
     return depth
 
+
 def _ensure_uint8_rgb(rgb):
-    """确保 rgb 为 uint8 三通道图像（返回 new array）"""
+    """确保 rgb 为 uint8 三通道图像（返回 new array）."""
     if rgb is None:
         return None
     if rgb.dtype == np.uint8:
@@ -161,6 +169,7 @@ def _ensure_uint8_rgb(rgb):
     if out.ndim == 2:
         out = cv2.cvtColor(out, cv2.COLOR_GRAY2RGB)
     return out
+
 
 def color_detect_tennis(rgb, debug_out_dir=None):
     hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
@@ -211,14 +220,15 @@ def color_detect_tennis(rgb, debug_out_dir=None):
             cy = int(M["m01"] / M["m00"])
         else:
             cx, cy = x + w // 2, y + h // 2
-        detections.append({'bbox': (x, y, w, h), 'centroid': (cx, cy), 'area': area})
+        detections.append({"bbox": (x, y, w, h), "centroid": (cx, cy), "area": area})
     return detections, mask
+
 
 def estimate_positions(detections, depth):
     pts = []
     for d in detections:
-        x, y, w, h = d['bbox']
-        cx, cy = d['centroid']
+        x, y, w, h = d["bbox"]
+        cx, cy = d["centroid"]
         z = None
         if depth is not None:
             dx1, dy1 = max(0, x), max(0, y)
@@ -226,8 +236,9 @@ def estimate_positions(detections, depth):
             crop = depth[dy1:dy2, dx1:dx2]
             if crop.size > 0:
                 z = float(np.median(crop))
-        pts.append({'centroid': (cx, cy), 'z': z, 'bbox': d['bbox'], 'area': d['area']})
+        pts.append({"centroid": (cx, cy), "z": z, "bbox": d["bbox"], "area": d["area"]})
     return pts
+
 
 def plan_path_nn(points, start_idx=0):
     if not points:
@@ -238,12 +249,12 @@ def plan_path_nn(points, start_idx=0):
     order.append(cur)
     while unused:
         best = None
-        bestd = float('inf')
-        x0, y0 = points[cur]['centroid']
-        z0 = points[cur]['z'] if points[cur]['z'] is not None else 0.0
+        bestd = float("inf")
+        x0, y0 = points[cur]["centroid"]
+        z0 = points[cur]["z"] if points[cur]["z"] is not None else 0.0
         for j in unused:
-            x1, y1 = points[j]['centroid']
-            z1 = points[j]['z'] if points[j]['z'] is not None else 0.0
+            x1, y1 = points[j]["centroid"]
+            z1 = points[j]["z"] if points[j]["z"] is not None else 0.0
             d = hypot(x1 - x0, y1 - y0) + 0.5 * abs(z1 - z0)
             if d < bestd:
                 bestd = d
@@ -253,13 +264,14 @@ def plan_path_nn(points, start_idx=0):
         cur = best
     return order
 
+
 def visualize(rgb, detections_pts, order, out_path, mask=None):
     vis = rgb.copy()
     vis_bgr = cv2.cvtColor(vis, cv2.COLOR_RGB2BGR)
     for i, p in enumerate(detections_pts):
-        cx, cy = p['centroid']
-        x, y, w, h = p['bbox']
-        z = p['z']
+        _cx, _cy = p["centroid"]
+        x, y, w, h = p["bbox"]
+        z = p["z"]
         cv2.rectangle(vis_bgr, (x, y), (x + w, y + h), (0, 255, 0), 2)
         label = f"{i}"
         if z is not None:
@@ -267,25 +279,28 @@ def visualize(rgb, detections_pts, order, out_path, mask=None):
         cv2.putText(vis_bgr, label, (x, y - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
     if order:
         for i in range(len(order) - 1):
-            a = detections_pts[order[i]]['centroid']
-            b = detections_pts[order[i + 1]]['centroid']
+            a = detections_pts[order[i]]["centroid"]
+            b = detections_pts[order[i + 1]]["centroid"]
             cv2.line(vis_bgr, (int(a[0]), int(a[1])), (int(b[0]), int(b[1])), (0, 0, 255), 2)
-        s = detections_pts[order[0]]['centroid']
+        s = detections_pts[order[0]]["centroid"]
         cv2.circle(vis_bgr, (int(s[0]), int(s[1])), 6, (255, 0, 0), -1)
     # 保存 RGB 可视化
-    os.makedirs(os.path.dirname(os.path.abspath(out_path)) or '.', exist_ok=True)
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)) or ".", exist_ok=True)
     cv2.imwrite(out_path, vis_bgr)
     # 若需要，返回保存路径
     return out_path
 
+
 def main():
     parser = argparse.ArgumentParser(description="基于 RGBD 的网球聚类与路径规划（测试版）")
-    parser.add_argument('--input', '-i', required=True, help="输入 RGBD 图像路径 (四通道 PNG 或 3通道 + 单通道深度可另传)")
-    parser.add_argument('--out', '-o', default='plan_vis.png', help="输出可视化路径图片")
-    parser.add_argument('--weights', '-w', default=None, help="YOLO 权重文件 (.pt)，不提供则使用颜色检测")
-    parser.add_argument('--conf', type=float, default=0.25, help="YOLO 置信度阈值")
-    parser.add_argument('--imgsz', type=int, default=640, help="YOLO 推理输入尺寸")
-    parser.add_argument('--device', default='cpu', help="设备: 'cpu' 或 GPU 索引如 '0' 或 'cuda:0'")
+    parser.add_argument(
+        "--input", "-i", required=True, help="输入 RGBD 图像路径 (四通道 PNG 或 3通道 + 单通道深度可另传)"
+    )
+    parser.add_argument("--out", "-o", default="plan_vis.png", help="输出可视化路径图片")
+    parser.add_argument("--weights", "-w", default=None, help="YOLO 权重文件 (.pt)，不提供则使用颜色检测")
+    parser.add_argument("--conf", type=float, default=0.25, help="YOLO 置信度阈值")
+    parser.add_argument("--imgsz", type=int, default=640, help="YOLO 推理输入尺寸")
+    parser.add_argument("--device", default="cpu", help="设备: 'cpu' 或 GPU 索引如 '0' 或 'cuda:0'")
     args = parser.parse_args()
 
     # 加载 RGBD 图像（保留原有 load_rgbd）
@@ -311,9 +326,9 @@ def main():
         yolo_dets = detect_with_yolo(rgb, model=yolo_model, conf=args.conf, imgsz=args.imgsz, device=args.device)
         if yolo_dets:
             for d in yolo_dets:
-                x, y, w, h = d['bbox']
+                x, y, w, h = d["bbox"]
                 cx, cy = x + w // 2, y + h // 2
-                detections.append({'bbox': (x, y, w, h), 'centroid': (cx, cy), 'area': w * h})
+                detections.append({"bbox": (x, y, w, h), "centroid": (cx, cy), "area": w * h})
         else:
             print("YOLO 未检测到目标，回退到颜色分割。")
             detections, mask = color_detect_tennis(rgb)
@@ -326,14 +341,15 @@ def main():
     # 输出路径顺序
     print("检测到对象数:", len(pts))
     for idx, i in enumerate(order):
-        c = pts[i]['centroid']
-        z = pts[i]['z']
-        print(f"{idx+1}. id={i}, centroid={c}, depth={z}")
+        c = pts[i]["centroid"]
+        z = pts[i]["z"]
+        print(f"{idx + 1}. id={i}, centroid={c}, depth={z}")
 
     # 可视化并保存
-    mask_val = mask if 'mask' in locals() else None
+    mask_val = mask if "mask" in locals() else None
     visualize(rgb, pts, order, args.out, mask=mask_val)
     print("可视化已保存到:", os.path.abspath(args.out))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

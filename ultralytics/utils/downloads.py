@@ -6,7 +6,6 @@ import subprocess
 from itertools import repeat
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import List, Tuple
 from urllib import parse, request
 
 from ultralytics.utils import LOGGER, TQDM, checks, clean_url, emojis, is_online, url2file
@@ -176,7 +175,7 @@ def unzip_file(
         if unzip_as_dir:
             # Zip has 1 top-level directory
             extract_path = path  # i.e. ../datasets
-            path = Path(path) / list(top_level_dirs)[0]  # i.e. extract coco8/ dir to ../datasets/
+            path = Path(path) / next(iter(top_level_dirs))  # i.e. extract coco8/ dir to ../datasets/
         else:
             # Zip has multiple files at top level
             path = extract_path = Path(path) / Path(file).stem  # i.e. extract multiple files to ../datasets/coco8/
@@ -226,7 +225,7 @@ def check_disk_space(
     # Check file size
     gib = 1 << 30  # bytes per GiB
     data = int(r.headers.get("Content-Length", 0)) / gib  # file size (GB)
-    total, used, free = (x / gib for x in shutil.disk_usage(path))  # bytes
+    _total, _used, free = (x / gib for x in shutil.disk_usage(path))  # bytes
 
     if data * sf < free:
         return True  # sufficient space
@@ -242,7 +241,7 @@ def check_disk_space(
     return False
 
 
-def get_google_drive_file_info(link: str) -> Tuple[str, str]:
+def get_google_drive_file_info(link: str) -> tuple[str, str]:
     """
     Retrieve the direct download link and filename for a shareable Google Drive file link.
 
@@ -387,7 +386,7 @@ def get_github_assets(
     repo: str = "ultralytics/assets",
     version: str = "latest",
     retry: bool = False,
-) -> Tuple[str, List[str]]:
+) -> tuple[str, list[str]]:
     """
     Retrieve the specified version's tag and assets from a GitHub repository.
 

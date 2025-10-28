@@ -1,9 +1,10 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+from __future__ import annotations
 
 import argparse
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, List
+from typing import Any
 
 import cv2
 import numpy as np
@@ -85,12 +86,12 @@ def mouse_callback(event: int, x: int, y: int, flags: int, param: Any) -> None:
 
 def run(
     weights: str = "yolo11n.pt",
-    source: str = None,
+    source: str | None = None,
     device: str = "cpu",
     view_img: bool = False,
     save_img: bool = False,
     exist_ok: bool = False,
-    classes: List[int] = None,
+    classes: list[int] | None = None,
     line_thickness: int = 2,
     track_thickness: int = 2,
     region_thickness: int = 2,
