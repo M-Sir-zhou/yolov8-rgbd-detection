@@ -1,4 +1,5 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+from __future__ import annotations
 
 import functools
 import glob
@@ -13,7 +14,6 @@ import time
 from importlib import metadata
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -648,7 +648,7 @@ def check_yolo(verbose=True, device=""):
         # System info
         gib = 1 << 30  # bytes per GiB
         ram = psutil.virtual_memory().total
-        total, used, free = shutil.disk_usage("/")
+        total, _used, free = shutil.disk_usage("/")
         s = f"({os.cpu_count()} CPUs, {ram / gib:.1f} GB RAM, {(total - free) / gib:.1f}/{total / gib:.1f} GB disk)"
         try:
             from IPython import display
@@ -678,7 +678,7 @@ def collect_system_info():
     gib = 1 << 30  # bytes per GiB
     cuda = torch.cuda.is_available()
     check_yolo()
-    total, used, free = shutil.disk_usage("/")
+    total, _used, free = shutil.disk_usage("/")
 
     info_dict = {
         "OS": platform.platform(),
@@ -813,7 +813,7 @@ def git_describe(path=ROOT):  # path must be a directory
         return ""
 
 
-def print_args(args: Optional[dict] = None, show_file=True, show_func=False):
+def print_args(args: dict | None = None, show_file=True, show_func=False):
     """
     Print function arguments (optional args dict).
 
