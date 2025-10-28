@@ -1,0 +1,13 @@
+#禁用
+#path: D:\ProjectCode\PyCharm\ultralytics-main\datasets\tennis-rgbd
+#train: train/rgb  # 修改为相对路径
+#val: val/rgb      # 修改为相对路径
+#test: test/rgb
+#nc: 1
+#names:
+#- '0'
+## Channels (RGB + Depth)
+#channels: 4
+#
+## RGB-D mode
+#rgbd: false
