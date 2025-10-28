@@ -1,7 +1,8 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from ultralytics.data.build import load_inference_source
 from ultralytics.engine.model import Model
@@ -47,7 +48,7 @@ class YOLO(Model):
         >>> model = YOLO("yolo11n.yaml")
     """
 
-    def __init__(self, model: Union[str, Path] = "yolo11n.pt", task: Optional[str] = None, verbose: bool = False):
+    def __init__(self, model: str | Path = "yolo11n.pt", task: str | None = None, verbose: bool = False):
         """
         Initialize a YOLO model.
 
@@ -85,7 +86,7 @@ class YOLO(Model):
                 self.__dict__ = new_instance.__dict__
 
     @property
-    def task_map(self) -> Dict[str, Dict[str, Any]]:
+    def task_map(self) -> dict[str, dict[str, Any]]:
         """Map head to model, trainer, validator, and predictor classes."""
         return {
             "classify": {
@@ -147,7 +148,7 @@ class YOLOWorld(Model):
         >>> model.set_classes(["person", "car", "bicycle"])
     """
 
-    def __init__(self, model: Union[str, Path] = "yolov8s-world.pt", verbose: bool = False) -> None:
+    def __init__(self, model: str | Path = "yolov8s-world.pt", verbose: bool = False) -> None:
         """
         Initialize YOLOv8-World model with a pre-trained model file.
 
@@ -165,7 +166,7 @@ class YOLOWorld(Model):
             self.model.names = YAML.load(ROOT / "cfg/datasets/coco8.yaml").get("names")
 
     @property
-    def task_map(self) -> Dict[str, Dict[str, Any]]:
+    def task_map(self) -> dict[str, dict[str, Any]]:
         """Map head to model, validator, and predictor classes."""
         return {
             "detect": {
@@ -176,7 +177,7 @@ class YOLOWorld(Model):
             }
         }
 
-    def set_classes(self, classes: List[str]) -> None:
+    def set_classes(self, classes: list[str]) -> None:
         """
         Set the model's class names for detection.
 
@@ -230,9 +231,7 @@ class YOLOE(Model):
         >>> results = model.predict("image.jpg", visual_prompts=prompts)
     """
 
-    def __init__(
-        self, model: Union[str, Path] = "yoloe-11s-seg.pt", task: Optional[str] = None, verbose: bool = False
-    ) -> None:
+    def __init__(self, model: str | Path = "yoloe-11s-seg.pt", task: str | None = None, verbose: bool = False) -> None:
         """
         Initialize YOLOE model with a pre-trained model file.
 
@@ -244,7 +243,7 @@ class YOLOE(Model):
         super().__init__(model=model, task=task, verbose=verbose)
 
     @property
-    def task_map(self) -> Dict[str, Dict[str, Any]]:
+    def task_map(self) -> dict[str, dict[str, Any]]:
         """Map head to model, validator, and predictor classes."""
         return {
             "detect": {
@@ -289,7 +288,7 @@ class YOLOE(Model):
         assert isinstance(self.model, YOLOEModel)
         return self.model.get_visual_pe(img, visual)
 
-    def set_vocab(self, vocab: List[str], names: List[str]) -> None:
+    def set_vocab(self, vocab: list[str], names: list[str]) -> None:
         """
         Set vocabulary and class names for the YOLOE model.
 
@@ -315,7 +314,7 @@ class YOLOE(Model):
         assert isinstance(self.model, YOLOEModel)
         return self.model.get_vocab(names)
 
-    def set_classes(self, classes: List[str], embeddings) -> None:
+    def set_classes(self, classes: list[str], embeddings) -> None:
         """
         Set the model's class names and embeddings for detection.
 
@@ -337,7 +336,7 @@ class YOLOE(Model):
         self,
         validator=None,
         load_vp: bool = False,
-        refer_data: Optional[str] = None,
+        refer_data: str | None = None,
         **kwargs,
     ):
         """
@@ -364,7 +363,7 @@ class YOLOE(Model):
         self,
         source=None,
         stream: bool = False,
-        visual_prompts: Dict[str, List] = {},
+        visual_prompts: dict[str, list] = {},
         refer_image=None,
         predictor=None,
         **kwargs,

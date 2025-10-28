@@ -1,11 +1,12 @@
 # check.py
+import os
+
 import cv2
 import numpy as np
-import os
 
 
 def verify_image(image_path):
-    """验证图像格式"""
+    """验证图像格式."""
     img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
     if img is None:
         print(f"无法读取图像: {image_path}")
@@ -28,7 +29,7 @@ def verify_image(image_path):
 
 # 验证几张图像
 image_dir = "D:/ProjectCode/PyCharm/ultralytics-main/datasets/tennis-yolo/images/train"
-image_files = [f for f in os.listdir(image_dir) if f.endswith('.png')][:5]  # 检查前5张图像
+image_files = [f for f in os.listdir(image_dir) if f.endswith(".png")][:5]  # 检查前5张图像
 
 for image_file in image_files:
     image_path = os.path.join(image_dir, image_file)

@@ -2,27 +2,26 @@
 """Convolution modules."""
 
 import math
-from typing import List
 
 import numpy as np
 import torch
 import torch.nn as nn
 
 __all__ = (
+    "CBAM",
+    "ChannelAttention",
+    "Concat",
     "Conv",
     "Conv2",
-    "LightConv",
+    "ConvTranspose",
     "DWConv",
     "DWConvTranspose2d",
-    "ConvTranspose",
     "Focus",
     "GhostConv",
-    "ChannelAttention",
-    "SpatialAttention",
-    "CBAM",
-    "Concat",
-    "RepConv",
     "Index",
+    "LightConv",
+    "RepConv",
+    "SpatialAttention",
 )
 
 
@@ -669,7 +668,7 @@ class Concat(nn.Module):
         super().__init__()
         self.d = dimension
 
-    def forward(self, x: List[torch.Tensor]):
+    def forward(self, x: list[torch.Tensor]):
         """
         Concatenate input tensors along specified dimension.
 
@@ -700,7 +699,7 @@ class Index(nn.Module):
         super().__init__()
         self.index = index
 
-    def forward(self, x: List[torch.Tensor]):
+    def forward(self, x: list[torch.Tensor]):
         """
         Select and return a particular index from input.
 

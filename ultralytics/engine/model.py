@@ -1,8 +1,9 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+from __future__ import annotations
 
 import inspect
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any
 
 import numpy as np
 import torch
@@ -79,8 +80,8 @@ class Model(torch.nn.Module):
 
     def __init__(
         self,
-        model: Union[str, Path, "Model"] = "yolo11n.pt",
-        task: str = None,
+        model: str | Path | Model = "yolo11n.pt",
+        task: str | None = None,
         verbose: bool = False,
     ) -> None:
         """
@@ -155,7 +156,7 @@ class Model(torch.nn.Module):
 
     def __call__(
         self,
-        source: Union[str, Path, int, Image.Image, list, tuple, np.ndarray, torch.Tensor] = None,
+        source: str | Path | int | Image.Image | list | tuple | np.ndarray | torch.Tensor = None,
         stream: bool = False,
         **kwargs: Any,
     ) -> list:
@@ -292,7 +293,7 @@ class Model(torch.nn.Module):
         weights = checks.check_model_file_from_stem(weights)  # add suffix, i.e. yolo11n -> yolo11n.pt
 
         if str(weights).rpartition(".")[-1] == "pt":
-            self.model, self.ckpt = attempt_load_one_weight(weights)####
+            self.model, self.ckpt = attempt_load_one_weight(weights)  ####
             self.task = self.model.task
             self.overrides = self.model.args = self._reset_ckpt_args(self.model.args)
             self.ckpt_path = self.model.pt_path
@@ -333,7 +334,7 @@ class Model(torch.nn.Module):
                 f"argument directly in your inference command, i.e. 'model.predict(source=..., device=0)'"
             )
 
-    def reset_weights(self) -> "Model":
+    def reset_weights(self) -> Model:
         """
         Reset the model's weights to their initial state.
 
@@ -359,7 +360,7 @@ class Model(torch.nn.Module):
             p.requires_grad = True
         return self
 
-    def load(self, weights: Union[str, Path] = "yolo11n.pt") -> "Model":
+    def load(self, weights: str | Path = "yolo11n.pt") -> Model:
         """
         Load parameters from the specified weights file into the model.
 
@@ -387,7 +388,7 @@ class Model(torch.nn.Module):
         self.model.load(weights)
         return self
 
-    def save(self, filename: Union[str, Path] = "saved_model.pt") -> None:
+    def save(self, filename: str | Path = "saved_model.pt") -> None:
         """
         Save the current model state to a file.
 
@@ -464,7 +465,7 @@ class Model(torch.nn.Module):
 
     def embed(
         self,
-        source: Union[str, Path, int, list, tuple, np.ndarray, torch.Tensor] = None,
+        source: str | Path | int | list | tuple | np.ndarray | torch.Tensor = None,
         stream: bool = False,
         **kwargs: Any,
     ) -> list:
@@ -495,11 +496,11 @@ class Model(torch.nn.Module):
 
     def predict(
         self,
-        source: Union[str, Path, int, Image.Image, list, tuple, np.ndarray, torch.Tensor] = None,
+        source: str | Path | int | Image.Image | list | tuple | np.ndarray | torch.Tensor = None,
         stream: bool = False,
         predictor=None,
         **kwargs: Any,
-    ) -> List[Results]:
+    ) -> list[Results]:
         """
         Perform predictions on the given image source using the YOLO model.
 
@@ -556,11 +557,11 @@ class Model(torch.nn.Module):
 
     def track(
         self,
-        source: Union[str, Path, int, list, tuple, np.ndarray, torch.Tensor] = None,
+        source: str | Path | int | list | tuple | np.ndarray | torch.Tensor = None,
         stream: bool = False,
         persist: bool = False,
         **kwargs: Any,
-    ) -> List[Results]:
+    ) -> list[Results]:
         """
         Conduct object tracking on the specified input source using the registered trackers.
 
@@ -853,7 +854,7 @@ class Model(torch.nn.Module):
             args = {**self.overrides, **custom, **kwargs, "mode": "train"}  # highest priority args on the right
             return Tuner(args=args, _callbacks=self.callbacks)(model=self, iterations=iterations)
 
-    def _apply(self, fn) -> "Model":
+    def _apply(self, fn) -> Model:
         """
         Apply a function to model tensors that are not parameters or registered buffers.
 
@@ -876,13 +877,13 @@ class Model(torch.nn.Module):
             >>> model = model._apply(lambda t: t.cuda())  # Move model to GPU
         """
         self._check_is_pytorch_model()
-        self = super()._apply(fn)  # noqa
+        self = super()._apply(fn)
         self.predictor = None  # reset predictor as device may have changed
         self.overrides["device"] = self.device  # was str(self.device) i.e. device(type='cuda', index=0) -> 'cuda:0'
         return self
 
     @property
-    def names(self) -> Dict[int, str]:
+    def names(self) -> dict[int, str]:
         """
         Retrieve the class names associated with the loaded model.
 
@@ -1036,7 +1037,7 @@ class Model(torch.nn.Module):
             self.callbacks[event] = [callbacks.default_callbacks[event][0]]
 
     @staticmethod
-    def _reset_ckpt_args(args: Dict[str, Any]) -> Dict[str, Any]:
+    def _reset_ckpt_args(args: dict[str, Any]) -> dict[str, Any]:
         """
         Reset specific arguments when loading a PyTorch model checkpoint.
 

@@ -1,9 +1,12 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+from __future__ import annotations
 
+import functools
 import math
+import operator
 import random
 from copy import deepcopy
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any
 
 import cv2
 import numpy as np
@@ -75,9 +78,9 @@ class BaseTransform:
             >>> print(transformed_labels)
             [1, 2, 3]
         """
-        if hasattr(self, 'rgbd_mode') and self.rgbd_mode:
+        if hasattr(self, "rgbd_mode") and self.rgbd_mode:
             # RGB-D模式下的图像处理
-            img = labels['img']
+            img = labels["img"]
             # 分离RGB和深度通道
             rgb_channels = img[..., :3]
             depth_channels = img[..., 3:]
@@ -86,7 +89,7 @@ class BaseTransform:
             # 这里需要根据具体变换修改
 
             # 重新合并通道
-            labels['img'] = np.concatenate([rgb_channels, depth_channels], axis=-1)
+            labels["img"] = np.concatenate([rgb_channels, depth_channels], axis=-1)
         else:
             # 原有的单图像处理逻辑
             pass
@@ -245,7 +248,7 @@ class Compose:
         """
         self.transforms.insert(index, transform)
 
-    def __getitem__(self, index: Union[list, int]) -> "Compose":
+    def __getitem__(self, index: list | int) -> Compose:
         """
         Retrieve a specific transform or a set of transforms using indexing.
 
@@ -267,7 +270,7 @@ class Compose:
         assert isinstance(index, (int, list)), f"The indices should be either list or int type but got {type(index)}"
         return Compose([self.transforms[i] for i in index]) if isinstance(index, list) else self.transforms[index]
 
-    def __setitem__(self, index: Union[list, int], value: Union[list, int]) -> None:
+    def __setitem__(self, index: list | int, value: list | int) -> None:
         """
         Set one or more transforms in the composition using indexing.
 
@@ -380,7 +383,7 @@ class BaseMixTransform:
         self.pre_transform = pre_transform
         self.p = p
 
-    def __call__(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def __call__(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Apply pre-processing transforms and cutmix/mixup/mosaic transforms to labels data.
 
@@ -420,7 +423,7 @@ class BaseMixTransform:
         labels.pop("mix_labels", None)
         return labels
 
-    def _mix_transform(self, labels: Dict[str, Any]):
+    def _mix_transform(self, labels: dict[str, Any]):
         """
         Apply CutMix, MixUp or Mosaic augmentation to the label dictionary.
 
@@ -456,7 +459,7 @@ class BaseMixTransform:
         return random.randint(0, len(self.dataset) - 1)
 
     @staticmethod
-    def _update_label_text(labels: Dict[str, Any]) -> Dict[str, Any]:
+    def _update_label_text(labels: dict[str, Any]) -> dict[str, Any]:
         """
         Update label text and class IDs for mixed labels in image augmentation.
 
@@ -489,7 +492,7 @@ class BaseMixTransform:
         if "texts" not in labels:
             return labels
 
-        mix_texts = sum([labels["texts"]] + [x["texts"] for x in labels["mix_labels"]], [])
+        mix_texts = functools.reduce(operator.iadd, [labels["texts"]] + [x["texts"] for x in labels["mix_labels"]], [])
         mix_texts = list({tuple(x) for x in mix_texts})
         text2id = {text: i for i, text in enumerate(mix_texts)}
 
@@ -578,7 +581,7 @@ class Mosaic(BaseMixTransform):
         else:  # select any images
             return [random.randint(0, len(self.dataset) - 1) for _ in range(self.n - 1)]
 
-    def _mix_transform(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def _mix_transform(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Apply mosaic augmentation to the input image and labels.
 
@@ -607,7 +610,7 @@ class Mosaic(BaseMixTransform):
             self._mosaic3(labels) if self.n == 3 else self._mosaic4(labels) if self.n == 4 else self._mosaic9(labels)
         )  # This code is modified for mosaic3 method.
 
-    def _mosaic3(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def _mosaic3(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Create a 1x3 image mosaic by combining three images.
 
@@ -666,7 +669,7 @@ class Mosaic(BaseMixTransform):
         final_labels["img"] = img3[-self.border[0] : self.border[0], -self.border[1] : self.border[1]]
         return final_labels
 
-    def _mosaic4(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def _mosaic4(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Create a 2x2 image mosaic from four input images.
 
@@ -724,7 +727,7 @@ class Mosaic(BaseMixTransform):
         final_labels["img"] = img4
         return final_labels
 
-    def _mosaic9(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def _mosaic9(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Create a 3x3 image mosaic from the input image and eight additional images.
 
@@ -797,7 +800,7 @@ class Mosaic(BaseMixTransform):
         return final_labels
 
     @staticmethod
-    def _update_labels(labels, padw: int, padh: int) -> Dict[str, Any]:
+    def _update_labels(labels, padw: int, padh: int) -> dict[str, Any]:
         """
         Update label coordinates with padding values.
 
@@ -823,7 +826,7 @@ class Mosaic(BaseMixTransform):
         labels["instances"].add_padding(padw, padh)
         return labels
 
-    def _cat_labels(self, mosaic_labels: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _cat_labels(self, mosaic_labels: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Concatenate and process labels for mosaic augmentation.
 
@@ -916,7 +919,7 @@ class MixUp(BaseMixTransform):
         """
         super().__init__(dataset=dataset, pre_transform=pre_transform, p=p)
 
-    def _mix_transform(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def _mix_transform(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Apply MixUp augmentation to the input labels.
 
@@ -981,7 +984,7 @@ class CutMix(BaseMixTransform):
         self.beta = beta
         self.num_areas = num_areas
 
-    def _rand_bbox(self, width: int, height: int) -> Tuple[int, int, int, int]:
+    def _rand_bbox(self, width: int, height: int) -> tuple[int, int, int, int]:
         """
         Generate random bounding box coordinates for the cut region.
 
@@ -1011,7 +1014,7 @@ class CutMix(BaseMixTransform):
 
         return x1, y1, x2, y2
 
-    def _mix_transform(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def _mix_transform(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Apply CutMix augmentation to the input labels.
 
@@ -1100,7 +1103,7 @@ class RandomPerspective:
         scale: float = 0.5,
         shear: float = 0.0,
         perspective: float = 0.0,
-        border: Tuple[int, int] = (0, 0),
+        border: tuple[int, int] = (0, 0),
         pre_transform=None,
     ):
         """
@@ -1131,7 +1134,7 @@ class RandomPerspective:
         self.border = border  # mosaic border
         self.pre_transform = pre_transform
 
-    def affine_transform(self, img: np.ndarray, border: Tuple[int, int]) -> Tuple[np.ndarray, np.ndarray, float]:
+    def affine_transform(self, img: np.ndarray, border: tuple[int, int]) -> tuple[np.ndarray, np.ndarray, float]:
         """
         Apply a sequence of affine transformations centered around the image center.
 
@@ -1229,7 +1232,7 @@ class RandomPerspective:
         y = xy[:, [1, 3, 5, 7]]
         return np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1)), dtype=bboxes.dtype).reshape(4, n).T
 
-    def apply_segments(self, segments: np.ndarray, M: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def apply_segments(self, segments: np.ndarray, M: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Apply affine transformations to segments and generate new bounding boxes.
 
@@ -1299,7 +1302,7 @@ class RandomPerspective:
         visible[out_mask] = 0
         return np.concatenate([xy, visible], axis=-1).reshape(n, nkpt, 3)
 
-    def __call__(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def __call__(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Apply random perspective and affine transformations to an image and its associated labels.
 
@@ -1467,7 +1470,7 @@ class RandomHSV:
         self.sgain = sgain
         self.vgain = vgain
 
-    def __call__(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def __call__(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Apply random HSV augmentation to an image within predefined limits.
 
@@ -1548,7 +1551,7 @@ class RandomFlip:
         >>> flipped_instances = result["instances"]
     """
 
-    def __init__(self, p: float = 0.5, direction: str = "horizontal", flip_idx: List[int] = None) -> None:
+    def __init__(self, p: float = 0.5, direction: str = "horizontal", flip_idx: list[int] | None = None) -> None:
         """
         Initialize the RandomFlip class with probability and direction.
 
@@ -1574,7 +1577,7 @@ class RandomFlip:
         self.direction = direction
         self.flip_idx = flip_idx
 
-    def __call__(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def __call__(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Apply random flip to an image and update any instances like bounding boxes or keypoints accordingly.
 
@@ -1648,7 +1651,7 @@ class LetterBox:
 
     def __init__(
         self,
-        new_shape: Tuple[int, int] = (640, 640),
+        new_shape: tuple[int, int] = (640, 640),
         auto: bool = False,
         scale_fill: bool = False,
         scaleup: bool = True,
@@ -1687,7 +1690,7 @@ class LetterBox:
         self.stride = stride
         self.center = center  # Put the image in the middle or top-left
 
-    def __call__(self, labels: Dict[str, Any] = None, image: np.ndarray = None) -> Union[Dict[str, Any], np.ndarray]:
+    def __call__(self, labels: dict[str, Any] | None = None, image: np.ndarray = None) -> dict[str, Any] | np.ndarray:
         """
         Resize and pad an image for object detection, instance segmentation, or pose estimation tasks.
 
@@ -1724,7 +1727,7 @@ class LetterBox:
 
         # Compute padding
         ratio = r, r  # width, height ratios
-        new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
+        new_unpad = round(shape[1] * r), round(shape[0] * r)
         dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]  # wh padding
         if self.auto:  # minimum rectangle
             dw, dh = np.mod(dw, self.stride), np.mod(dh, self.stride)  # wh padding
@@ -1742,8 +1745,8 @@ class LetterBox:
             if img.ndim == 2:
                 img = img[..., None]
 
-        top, bottom = int(round(dh - 0.1)) if self.center else 0, int(round(dh + 0.1))
-        left, right = int(round(dw - 0.1)) if self.center else 0, int(round(dw + 0.1))
+        top, bottom = round(dh - 0.1) if self.center else 0, round(dh + 0.1)
+        left, right = round(dw - 0.1) if self.center else 0, round(dw + 0.1)
         h, w, c = img.shape
         if c == 3:
             img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(114, 114, 114))
@@ -1764,7 +1767,7 @@ class LetterBox:
             return img
 
     @staticmethod
-    def _update_labels(labels: Dict[str, Any], ratio: Tuple[float, float], padw: float, padh: float) -> Dict[str, Any]:
+    def _update_labels(labels: dict[str, Any], ratio: tuple[float, float], padw: float, padh: float) -> dict[str, Any]:
         """
         Update labels after applying letterboxing to an image.
 
@@ -1824,12 +1827,12 @@ class CopyPaste(BaseMixTransform):
         assert mode in {"flip", "mixup"}, f"Expected `mode` to be `flip` or `mixup`, but got {mode}."
         self.mode = mode
 
-    def _mix_transform(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def _mix_transform(self, labels: dict[str, Any]) -> dict[str, Any]:
         """Apply Copy-Paste augmentation to combine objects from another image into the current image."""
         labels2 = labels["mix_labels"][0]
         return self._transform(labels, labels2)
 
-    def __call__(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def __call__(self, labels: dict[str, Any]) -> dict[str, Any]:
         """Apply Copy-Paste augmentation to an image and its labels."""
         if len(labels["instances"].segments) == 0 or self.p == 0:
             return labels
@@ -1856,7 +1859,7 @@ class CopyPaste(BaseMixTransform):
         labels.pop("mix_labels", None)
         return labels
 
-    def _transform(self, labels1: Dict[str, Any], labels2: Dict[str, Any] = {}) -> Dict[str, Any]:
+    def _transform(self, labels1: dict[str, Any], labels2: dict[str, Any] = {}) -> dict[str, Any]:
         """Apply Copy-Paste augmentation to combine objects from another image into the current image."""
         im = labels1["img"]
         if "mosaic_border" not in labels1:
@@ -2034,7 +2037,7 @@ class Albumentations:
         except Exception as e:
             LOGGER.info(f"{prefix}{e}")
 
-    def __call__(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def __call__(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Apply Albumentations transformations to input labels.
 
@@ -2195,7 +2198,7 @@ class Format:
         self.batch_idx = batch_idx  # keep the batch indexes
         self.bgr = bgr
 
-    def __call__(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def __call__(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Format image annotations for object detection, instance segmentation, and pose estimation tasks.
 
@@ -2297,7 +2300,7 @@ class Format:
 
     def _format_segments(
         self, instances: Instances, cls: np.ndarray, w: int, h: int
-    ) -> Tuple[np.ndarray, Instances, np.ndarray]:
+    ) -> tuple[np.ndarray, Instances, np.ndarray]:
         """
         Convert polygon segments to bitmap masks.
 
@@ -2359,7 +2362,7 @@ class LoadVisualPrompt:
 
         return (r >= x1) * (r < x2) * (c >= y1) * (c < y2)
 
-    def __call__(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def __call__(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Process labels to create visual prompts.
 
@@ -2382,10 +2385,10 @@ class LoadVisualPrompt:
 
     def get_visuals(
         self,
-        category: Union[int, np.ndarray, torch.Tensor],
-        shape: Tuple[int, int],
-        bboxes: Union[np.ndarray, torch.Tensor] = None,
-        masks: Union[np.ndarray, torch.Tensor] = None,
+        category: int | np.ndarray | torch.Tensor,
+        shape: tuple[int, int],
+        bboxes: np.ndarray | torch.Tensor = None,
+        masks: np.ndarray | torch.Tensor = None,
     ) -> torch.Tensor:
         """
         Generate visual masks based on bounding boxes or masks.
@@ -2457,10 +2460,10 @@ class RandomLoadText:
     def __init__(
         self,
         prompt_format: str = "{}",
-        neg_samples: Tuple[int, int] = (80, 80),
+        neg_samples: tuple[int, int] = (80, 80),
         max_samples: int = 80,
         padding: bool = False,
-        padding_value: List[str] = [""],
+        padding_value: list[str] = [""],
     ) -> None:
         """
         Initialize the RandomLoadText class for randomly sampling positive and negative texts.
@@ -2501,7 +2504,7 @@ class RandomLoadText:
         self.padding = padding
         self.padding_value = padding_value
 
-    def __call__(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+    def __call__(self, labels: dict[str, Any]) -> dict[str, Any]:
         """
         Randomly sample positive and negative texts and update class indices accordingly.
 
@@ -2637,11 +2640,11 @@ def v8_transforms(dataset, imgsz: int, hyp: IterableSimpleNamespace, stretch: bo
 
 # Classification augmentations -----------------------------------------------------------------------------------------
 def classify_transforms(
-    size: Union[Tuple[int, int], int] = 224,
-    mean: Tuple[float, float, float] = DEFAULT_MEAN,
-    std: Tuple[float, float, float] = DEFAULT_STD,
+    size: tuple[int, int] | int = 224,
+    mean: tuple[float, float, float] = DEFAULT_MEAN,
+    std: tuple[float, float, float] = DEFAULT_STD,
     interpolation: str = "BILINEAR",
-    crop_fraction: float = None,
+    crop_fraction: float | None = None,
 ):
     """
     Create a composition of image transforms for classification tasks.
@@ -2689,13 +2692,13 @@ def classify_transforms(
 # Classification training augmentations --------------------------------------------------------------------------------
 def classify_augmentations(
     size: int = 224,
-    mean: Tuple[float, float, float] = DEFAULT_MEAN,
-    std: Tuple[float, float, float] = DEFAULT_STD,
-    scale: Tuple[float, float] = None,
-    ratio: Tuple[float, float] = None,
+    mean: tuple[float, float, float] = DEFAULT_MEAN,
+    std: tuple[float, float, float] = DEFAULT_STD,
+    scale: tuple[float, float] | None = None,
+    ratio: tuple[float, float] | None = None,
     hflip: float = 0.5,
     vflip: float = 0.0,
-    auto_augment: str = None,
+    auto_augment: str | None = None,
     hsv_h: float = 0.015,  # image HSV-Hue augmentation (fraction)
     hsv_s: float = 0.4,  # image HSV-Saturation augmentation (fraction)
     hsv_v: float = 0.4,  # image HSV-Value augmentation (fraction)
@@ -2815,7 +2818,7 @@ class ClassifyLetterBox:
         (640, 640, 3)
     """
 
-    def __init__(self, size: Union[int, Tuple[int, int]] = (640, 640), auto: bool = False, stride: int = 32):
+    def __init__(self, size: int | tuple[int, int] = (640, 640), auto: bool = False, stride: int = 32):
         """
         Initialize the ClassifyLetterBox object for image preprocessing.
 
@@ -2904,7 +2907,7 @@ class CenterCrop:
         (640, 640, 3)
     """
 
-    def __init__(self, size: Union[int, Tuple[int, int]] = (640, 640)):
+    def __init__(self, size: int | tuple[int, int] = (640, 640)):
         """
         Initialize the CenterCrop object for image preprocessing.
 
@@ -2928,7 +2931,7 @@ class CenterCrop:
         super().__init__()
         self.h, self.w = (size, size) if isinstance(size, int) else size
 
-    def __call__(self, im: Union[Image.Image, np.ndarray]) -> np.ndarray:
+    def __call__(self, im: Image.Image | np.ndarray) -> np.ndarray:
         """
         Apply center cropping to an input image.
 
