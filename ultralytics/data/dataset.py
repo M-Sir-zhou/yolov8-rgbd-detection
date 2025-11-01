@@ -90,64 +90,91 @@ class YOLODataset(BaseDataset):
 
         # ...existing code...
     def load_image(self, i):
-        """Loads 1 image from dataset index 'i', returns (im, original hw)."""
+        """Loads 1 image from dataset index 'i', returns (im, original hw, resized hw)."""
         # 检查是否为RGB-D模式
         if hasattr(self, "rgbd_mode") and self.rgbd_mode:
-            # 加载 RGB 图像（BGR -> RGB）
             im_path = str(self.im_files[i])
-            im = cv2.imread(im_path, cv2.IMREAD_COLOR)
+            
+            # 首先尝试读取为4通道图像（已融合的RGBD PNG）
+            im = cv2.imread(im_path, cv2.IMREAD_UNCHANGED)
             if im is None:
                 raise FileNotFoundError(f"Image not found: {im_path}")
-            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-    
-            # 构造 depth 路径（兼容 Unix/Windows 分隔符）
-            depth_path = im_path.replace("/rgb/", "/depth/").replace("\\rgb\\", "\\depth\\")
-            depth_suffix = self.data.get("depth_suffix", "")  # 例如 '_d' 或 ''
-            if depth_suffix:
-                parts = depth_path.rsplit(".", 1)
-                if len(parts) == 2:
-                    depth_path = f"{parts[0]}{depth_suffix}.{parts[1]}"
-    
-            # 以 UNCHANGED 读取深度图以保留单通道或 alpha 通道
-            depth_im = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED)
-            if depth_im is None:
-                raise FileNotFoundError(f"Depth image not found: {depth_path}")
-    
-            # 提取单通道 depth（支持单通道、3通道、4通道）
-            if depth_im.ndim == 2:
-                depth_ch = depth_im
-            elif depth_im.ndim == 3:
-                if depth_im.shape[2] == 4:
-                    # 假设第4通道为深度/alpha
-                    depth_ch = depth_im[:, :, 3]
-                else:
-                    # 3通道深度图当作 BGR -> 灰度
-                    depth_ch = cv2.cvtColor(depth_im, cv2.COLOR_BGR2GRAY)
+            
+            # 如果图像已经是4通道，直接使用
+            if im.ndim == 3 and im.shape[2] == 4:
+                # BGRA -> RGBA (转换颜色空间，保持4通道)
+                # OpenCV的4通道是BGRA，我们需要RGBA
+                b, g, r, a = cv2.split(im)
+                im = cv2.merge([r, g, b, a])  # RGBA格式
+                h, w = im.shape[:2]
+                
+                # 缩放到 imgsz（保持4通道）
+                max_dim = max(h, w)
+                ratio = self.imgsz / max_dim
+                if ratio != 1:
+                    new_h, new_w = int(h * ratio), int(w * ratio)
+                    im = cv2.resize(im, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+                    return im, (h, w), im.shape[:2]  # 返回 (图像, 原始尺寸, 调整后尺寸)
+                
+                return im, (h, w), (h, w)  # 没有缩放，两个尺寸相同
+            
+            # 如果不是4通道，尝试分离加载RGB和Depth
             else:
-                raise ValueError(f"Unsupported depth image shape: {depth_im.shape}")
-    
-            # 如需，调整深度尺寸与 RGB 一致
-            if depth_ch.shape[:2] != im.shape[:2]:
-                depth_ch = cv2.resize(depth_ch, (im.shape[1], im.shape[0]), interpolation=cv2.INTER_NEAREST)
-    
-            # 归一化到 uint8，保持与 RGB 相同类型
-            if depth_ch.dtype != np.uint8:
-                mn = float(depth_ch.min())
-                mx = float(depth_ch.max())
-                if mx > mn:
-                    depth_ch = ((depth_ch - mn) / (mx - mn) * 255.0).astype(np.uint8)
+                # 加载 RGB 图像（BGR -> RGB）
+                im = cv2.imread(im_path, cv2.IMREAD_COLOR)
+                if im is None:
+                    raise FileNotFoundError(f"Image not found: {im_path}")
+                im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        
+                # 构造 depth 路径（兼容 Unix/Windows 分隔符）
+                depth_path = im_path.replace("/rgb/", "/depth/").replace("\\rgb\\", "\\depth\\")
+                depth_suffix = self.data.get("depth_suffix", "")  # 例如 '_d' 或 ''
+                if depth_suffix:
+                    parts = depth_path.rsplit(".", 1)
+                    if len(parts) == 2:
+                        depth_path = f"{parts[0]}{depth_suffix}.{parts[1]}"
+        
+                # 以 UNCHANGED 读取深度图以保留单通道或 alpha 通道
+                depth_im = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED)
+                if depth_im is None:
+                    raise FileNotFoundError(f"Depth image not found: {depth_path}")
+        
+                # 提取单通道 depth（支持单通道、3通道、4通道）
+                if depth_im.ndim == 2:
+                    depth_ch = depth_im
+                elif depth_im.ndim == 3:
+                    if depth_im.shape[2] == 4:
+                        # 假设第4通道为深度/alpha
+                        depth_ch = depth_im[:, :, 3]
+                    else:
+                        # 3通道深度图当作 BGR -> 灰度
+                        depth_ch = cv2.cvtColor(depth_im, cv2.COLOR_BGR2GRAY)
                 else:
-                    depth_ch = np.zeros_like(depth_ch, dtype=np.uint8)
-    
-            # 合并为 HxWx4 (RGB + depth)
-            im = np.concatenate([im, depth_ch[:, :, None]], axis=2)
-    
-            # 缩放到 imgsz
-            h, w = im.shape[:2]
-            r = self.imgsz / max(h, w)  # ratio
-            if r != 1:  # if sizes are not equal
-                im = cv2.resize(im, (int(w * r), int(h * r)), interpolation=cv2.INTER_LINEAR)
-            return im, (h, w)
+                    raise ValueError(f"Unsupported depth image shape: {depth_im.shape}")
+        
+                # 如需，调整深度尺寸与 RGB 一致
+                if depth_ch.shape[:2] != im.shape[:2]:
+                    depth_ch = cv2.resize(depth_ch, (im.shape[1], im.shape[0]), interpolation=cv2.INTER_NEAREST)
+        
+                # 归一化到 uint8，保持与 RGB 相同类型
+                if depth_ch.dtype != np.uint8:
+                    mn = float(depth_ch.min())
+                    mx = float(depth_ch.max())
+                    if mx > mn:
+                        depth_ch = ((depth_ch - mn) / (mx - mn) * 255.0).astype(np.uint8)
+                    else:
+                        depth_ch = np.zeros_like(depth_ch, dtype=np.uint8)
+        
+                # 合并为 HxWx4 (RGB + depth)
+                im = np.concatenate([im, depth_ch[:, :, None]], axis=2)
+        
+                # 缩放到 imgsz
+                h, w = im.shape[:2]
+                r = self.imgsz / max(h, w)  # ratio
+                if r != 1:  # if sizes are not equal
+                    im = cv2.resize(im, (int(w * r), int(h * r)), interpolation=cv2.INTER_LINEAR)
+                    return im, (h, w), im.shape[:2]  # 返回 (图像, 原始尺寸, 调整后尺寸)
+                return im, (h, w), (h, w)  # 没有缩放
         else:
             # 原有的单图像加载逻辑（保持不变）
             im = cv2.imread(self.im_files[i])
@@ -158,7 +185,8 @@ class YOLODataset(BaseDataset):
             r = self.imgsz / max(h, w)  # ratio
             if r != 1:  # if sizes are not equal
                 im = cv2.resize(im, (int(w * r), int(h * r)), interpolation=cv2.INTER_LINEAR)
-            return im, (h, w)
+                return im, (h, w), im.shape[:2]  # 返回 (图像, 原始尺寸, 调整后尺寸)
+            return im, (h, w), (h, w)  # 没有缩放
     # ...existing code...
 
 
